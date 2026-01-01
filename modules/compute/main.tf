@@ -123,6 +123,7 @@ resource "aws_lambda_function" "document_upload" {
   timeout          = var.lambda_timeout
   filename         = "${path.module}/lambda/functions/placeholder.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  description      = "Handle document uploads for driver verification - Stores documents in S3 and creates metadata records"
 
   dynamic "vpc_config" {
     for_each = var.private_subnet_ids != null && length(var.private_subnet_ids) > 0 ? [1] : []
@@ -145,6 +146,7 @@ resource "aws_lambda_function" "document_review" {
   timeout          = var.lambda_timeout
   filename         = "${path.module}/lambda/functions/placeholder.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  description      = "Handle manual review workflow for uploaded driver documents - Updates document status and notifies drivers"
 
   dynamic "vpc_config" {
     for_each = var.private_subnet_ids != null && length(var.private_subnet_ids) > 0 ? [1] : []
@@ -167,6 +169,7 @@ resource "aws_lambda_function" "document_expiry" {
   timeout          = 60
   filename         = "${path.module}/lambda/functions/placeholder.zip"
   source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  description      = "Monitor and notify about expiring driver documents - Runs scheduled to check document expiration dates"
 
   dynamic "vpc_config" {
     for_each = var.private_subnet_ids != null && length(var.private_subnet_ids) > 0 ? [1] : []
