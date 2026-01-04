@@ -1,0 +1,23 @@
+{
+  "name": "document-expiry-lambda",
+  "version": "1.0.0",
+  "description": "Scheduled job to check for expiring driver documents",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.700.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "lambda",
+    "document",
+    "expiry",
+    "scheduled",
+    "postgresql"
+  ],
+  "author": "VeHealth",
+  "license": "UNLICENSED"
+}

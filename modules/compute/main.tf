@@ -14,6 +14,8 @@ locals {
     ENVIRONMENT        = var.environment
     LOG_LEVEL          = var.log_level
     RDS_PROXY_ENDPOINT = var.rds_proxy_endpoint
+    RDS_SECRET_ARN     = var.rds_secret_arn
+    DATABASE_NAME      = var.database_name
     DOCUMENTS_BUCKET   = var.documents_bucket_name
   }
 }
@@ -67,11 +69,18 @@ resource "aws_iam_role_policy" "lambda_secrets" {
   role  = aws_iam_role.compliance_lambda_role.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
-      Resource = "arn:aws:secretsmanager:*:*:secret:vehealth/${var.environment}/rds-*"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+        Resource = "arn:aws:secretsmanager:*:*:secret:vehealth/${var.environment}/rds/*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt"]
+        Resource = "*"
+      }
+    ]
   })
 }
 
@@ -111,6 +120,31 @@ resource "aws_security_group" "compliance_lambda_sg" {
 }
 
 # ------------------------------------------------------------------------------
+# Lambda Functions - Data Sources for Packaging
+# ------------------------------------------------------------------------------
+
+data "archive_file" "document_upload" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/functions/document-upload"
+  output_path = "${path.module}/lambda/functions/document-upload.zip"
+  excludes    = ["build.sh", "*.zip", ".git*"]
+}
+
+data "archive_file" "document_review" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/functions/document-review"
+  output_path = "${path.module}/lambda/functions/document-review.zip"
+  excludes    = ["build.sh", "*.zip", ".git*"]
+}
+
+data "archive_file" "document_expiry" {
+  type        = "zip"
+  source_dir  = "${path.module}/lambda/functions/document-expiry"
+  output_path = "${path.module}/lambda/functions/document-expiry.zip"
+  excludes    = ["build.sh", "*.zip", ".git*"]
+}
+
+# ------------------------------------------------------------------------------
 # Lambda Functions
 # ------------------------------------------------------------------------------
 
@@ -121,8 +155,8 @@ resource "aws_lambda_function" "document_upload" {
   runtime          = var.lambda_runtime
   memory_size      = var.lambda_memory_size
   timeout          = var.lambda_timeout
-  filename         = "${path.module}/lambda/functions/placeholder.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  filename         = data.archive_file.document_upload.output_path
+  source_code_hash = data.archive_file.document_upload.output_base64sha256
   description      = "Handle document uploads for driver verification - Stores documents in S3 and creates metadata records"
 
   dynamic "vpc_config" {
@@ -144,8 +178,8 @@ resource "aws_lambda_function" "document_review" {
   runtime          = var.lambda_runtime
   memory_size      = var.lambda_memory_size
   timeout          = var.lambda_timeout
-  filename         = "${path.module}/lambda/functions/placeholder.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  filename         = data.archive_file.document_review.output_path
+  source_code_hash = data.archive_file.document_review.output_base64sha256
   description      = "Handle manual review workflow for uploaded driver documents - Updates document status and notifies drivers"
 
   dynamic "vpc_config" {
@@ -167,8 +201,8 @@ resource "aws_lambda_function" "document_expiry" {
   runtime          = var.lambda_runtime
   memory_size      = var.lambda_memory_size
   timeout          = 60
-  filename         = "${path.module}/lambda/functions/placeholder.zip"
-  source_code_hash = filebase64sha256("${path.module}/lambda/functions/placeholder.zip")
+  filename         = data.archive_file.document_expiry.output_path
+  source_code_hash = data.archive_file.document_expiry.output_base64sha256
   description      = "Monitor and notify about expiring driver documents - Runs scheduled to check document expiration dates"
 
   dynamic "vpc_config" {

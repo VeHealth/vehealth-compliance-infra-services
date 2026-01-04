@@ -35,6 +35,8 @@ module "compliance_services" {
   private_subnet_ids    = local.private_subnet_ids
   rds_proxy_endpoint    = local.rds_proxy_endpoint
   rds_security_group    = local.rds_security_group
+  rds_secret_arn        = var.rds_secret_arn
+  database_name         = var.database_name
   lambda_runtime        = var.lambda_runtime
   lambda_memory_size    = var.lambda_memory_size
   lambda_timeout        = var.lambda_timeout
@@ -49,4 +51,29 @@ module "storage" {
   project_name = var.project_name
   environment  = var.environment
   tags         = local.common_tags
+}
+
+# ==============================================================================
+# MONITORING - CLOUDWATCH ALARMS & DASHBOARDS
+# ==============================================================================
+
+module "monitoring" {
+  source = "../../modules/monitoring"
+
+  project_name   = var.project_name
+  environment    = var.environment
+  aws_region     = var.aws_region
+  api_gateway_id = var.api_gateway_id
+
+  # Alarm notifications
+  alarm_email = var.alarm_email
+
+  # Alarm thresholds
+  lambda_error_threshold    = var.lambda_error_threshold
+  lambda_duration_threshold = var.lambda_duration_threshold
+  api_4xx_threshold         = var.api_4xx_threshold
+  api_5xx_threshold         = var.api_5xx_threshold
+  api_latency_threshold     = var.api_latency_threshold
+
+  tags = local.common_tags
 }

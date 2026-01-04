@@ -5,6 +5,11 @@ variable "vpc_id" { type = string }
 variable "private_subnet_ids" { type = list(string) }
 variable "rds_proxy_endpoint" { type = string }
 variable "rds_security_group" { type = string }
+variable "rds_secret_arn" { type = string }
+variable "database_name" {
+  type    = string
+  default = "vehealth"
+}
 variable "lambda_runtime" {
   type    = string
   default = "nodejs18.x"
